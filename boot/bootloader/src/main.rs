@@ -8,74 +8,61 @@ mod cpu;
 mod elf;
 mod memory;
 mod framebuffer;
+
+mod core;
+mod system;
 mod graphics;
-mod font;
-mod ui;
-mod progress;
-mod window;   // 🆕
-mod cursor;   // 🆕
-mod render;   // 🆕
+mod input;
 
 use uefi::prelude::*;
 
-use bootinfo::BootInfo;
 use kernel::load_kernel;
 use memory::get_memory_map;
 use framebuffer::get_framebuffer;
-use graphics::Color;
-use window::create_window;
-use render::draw_rect;
-use cursor::Cursor;
+
+use graphics::primitives::Color;
+use graphics::framebuffer::draw_pixel;
+
+use input::keyboard::KeyboardState;
+use input::mouse::MouseState;
+use input::events::InputEvent;
 
 #[entry]
 fn efi_main() -> Status {
     uefi::helpers::init();
 
+    let _ = core::boot_core();
+    let _ = system::init_system();
+
     let kernel_entry = load_kernel().ok()?;
     let memory_map = get_memory_map().ok()?;
 
-    let mut entries = 0;
-    for _ in memory_map.regions {
-        entries += 1;
-    }
-
     let fb = get_framebuffer();
 
-    let _bootinfo = BootInfo {
-        memory_map_ptr: memory_map.regions.as_ptr() as usize,
-        memory_map_entries: entries,
-        usable_memory: 0,
-        reserved_memory: 0,
-        framebuffer_addr: fb.addr,
-        framebuffer_width: fb.width,
-        framebuffer_height: fb.height,
-        framebuffer_pitch: fb.pitch,
-        kernel_entry,
-    };
+    let mut keyboard = KeyboardState::new();
+    let mut mouse = MouseState::new();
+
+    let events = [
+        InputEvent::KeyDown(65),
+        InputEvent::MouseMove { x: 120, y: 80 },
+        InputEvent::MouseClick { button: 1 },
+    ];
+
+    for event in events {
+        match event {
+            InputEvent::KeyDown(k) => keyboard.handle_key(k),
+            InputEvent::KeyUp(_) => {},
+            InputEvent::MouseMove { x, y } => mouse.move_to(x, y),
+            InputEvent::MouseClick { .. } => mouse.click(),
+        }
+    }
 
     let white = Color { r: 255, g: 255, b: 255 };
 
-    // 🪟 WINDOW SYSTEM START
-    let win = create_window(1, 50, 50, 300, 200, "NexoOS Boot");
-
-    draw_rect(fb.addr, win.rect, fb.width, white);
-
-    // 🖱️ CURSOR INIT
-    let mut cursor = Cursor::new();
-    cursor.move_to(100, 100);
-
-    // debug output (visueel conceptueel)
-    draw_rect(
-        fb.addr,
-        window::Rect {
-            x: cursor.x,
-            y: cursor.y,
-            w: 2,
-            h: 2,
-        },
-        fb.width,
-        Color { r: 255, g: 0, b: 0 },
-    );
+    // minimal visual output
+    for x in 0..200 {
+        draw_pixel(fb.addr, x, 120, fb.width, white);
+    }
 
     Status::SUCCESS
 }
