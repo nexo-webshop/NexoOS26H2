@@ -5,6 +5,7 @@ mod analysis_hints;
 mod bootinfo;
 mod kernel;
 mod cpu;
+mod elf;
 
 use uefi::prelude::*;
 use uefi::println;
@@ -17,13 +18,13 @@ use cpu::CpuState;
 fn efi_main() -> Status {
     uefi::helpers::init();
 
-    println!("NexoOS Bootloader v0.2026.00004");
-    println!("Stage: kernel handover preparation");
+    println!("NexoOS Bootloader v0.2026.00005");
+    println!("Stage: ELF loader skeleton");
 
     let kernel_entry = match load_kernel() {
         Some(addr) => addr,
         None => {
-            println!("Kernel load failed");
+            println!("Kernel load failed (ELF stage)");
             return Status::LOAD_ERROR;
         }
     };
@@ -39,11 +40,12 @@ fn efi_main() -> Status {
 
     let cpu_state = CpuState::new(kernel_entry);
 
+    println!("ELF parsed (stub)");
     println!("Kernel entry: {:#x}", kernel_entry);
-    println!("Stack pointer: {:#x}", cpu_state.stack_pointer);
-    println!("CPU state prepared");
+    println!("CPU state ready");
+    println!("BootInfo constructed");
 
-    println!("READY FOR KERNEL JUMP (not executed yet)");
+    println!("READY FOR PHYSICAL MEMORY MAPPING (next version)");
 
     Status::SUCCESS
 }
