@@ -6,9 +6,9 @@ at the moment: every version is in support. after 5 years. products enter LTS fo
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 26H2   | :white_check_mark: |
+| 26H2-PRE-FUTUREPLATFORMS-1   | :white_check_mark: |
 | [soon] 27H1   | :x:                |
-| [soon] 27H2  | :white_check_mark: |
+| [soon] 27H2  | :x: |
 | [soon] 28H1   | :x:                |
 
 ## Reporting a Vulnerability
