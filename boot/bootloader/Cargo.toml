@@ -1,0 +1,16 @@
+[package]
+name = "nexo_bootloader"
+version = "0.2026.00001"
+edition = "2024"
+
+[dependencies]
+uefi = { version = "0.35", features = ["alloc"] }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+lto = true
+codegen-units = 1
+strip = true
