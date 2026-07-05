@@ -6,46 +6,47 @@ mod bootinfo;
 mod kernel;
 mod cpu;
 mod elf;
+mod memory;
 
 use uefi::prelude::*;
 use uefi::println;
 
 use bootinfo::BootInfo;
 use kernel::load_kernel;
-use cpu::CpuState;
 
 #[entry]
 fn efi_main() -> Status {
     uefi::helpers::init();
 
-    println!("NexoOS Bootloader v0.2026.00005");
-    println!("Stage: ELF loader skeleton");
+    println!("NexoOS Bootloader v0.2026.00006");
+    println!("Stage: memory map acquisition");
 
     let kernel_entry = match load_kernel() {
         Some(addr) => addr,
         None => {
-            println!("Kernel load failed (ELF stage)");
+            println!("Kernel load failed");
             return Status::LOAD_ERROR;
         }
     };
 
+    // 🔒 MEMORY MAP STAGE (conceptueel in deze versie)
+    let memory_map_ptr: usize = 0x0; // placeholder
+    let memory_map_entries: usize = 0;
+
     let bootinfo = BootInfo {
-        memory_map_addr: 0,
-        memory_map_size: 0,
+        memory_map_ptr,
+        memory_map_entries,
         framebuffer_addr: 0,
         framebuffer_width: 0,
         framebuffer_height: 0,
         kernel_entry,
     };
 
-    let cpu_state = CpuState::new(kernel_entry);
-
-    println!("ELF parsed (stub)");
     println!("Kernel entry: {:#x}", kernel_entry);
-    println!("CPU state ready");
-    println!("BootInfo constructed");
+    println!("Memory map acquired (stub)");
+    println!("BootInfo updated");
 
-    println!("READY FOR PHYSICAL MEMORY MAPPING (next version)");
+    println!("READY FOR REAL UEFI MEMORY MAP (next upgrade)");
 
     Status::SUCCESS
 }
