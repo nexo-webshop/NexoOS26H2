@@ -9,9 +9,12 @@ mod elf;
 mod memory;
 mod framebuffer;
 mod graphics;
-mod font;       // 🆕
-mod ui;         // 🆕
-mod progress;   // 🆕
+mod font;
+mod ui;
+mod progress;
+mod window;   // 🆕
+mod cursor;   // 🆕
+mod render;   // 🆕
 
 use uefi::prelude::*;
 
@@ -20,8 +23,9 @@ use kernel::load_kernel;
 use memory::get_memory_map;
 use framebuffer::get_framebuffer;
 use graphics::Color;
-use ui::draw_text;
-use progress::draw_progress_bar;
+use window::create_window;
+use render::draw_rect;
+use cursor::Cursor;
 
 #[entry]
 fn efi_main() -> Status {
@@ -51,29 +55,27 @@ fn efi_main() -> Status {
 
     let white = Color { r: 255, g: 255, b: 255 };
 
-    // 🧠 BOOT UI START
-    draw_text(
-        fb.addr,
-        20,
-        20,
-        fb.width,
-        "NexoOS Bootloader v0.2026.00010",
-        white,
-    );
+    // 🪟 WINDOW SYSTEM START
+    let win = create_window(1, 50, 50, 300, 200, "NexoOS Boot");
 
-    draw_text(
-        fb.addr,
-        20,
-        40,
-        fb.width,
-        "Initializing system...",
-        white,
-    );
+    draw_rect(fb.addr, win.rect, fb.width, white);
 
-    // 📊 progress bar simulation
-    for i in 0..100 {
-        draw_progress_bar(fb.addr, 20, 70, fb.width, i, 100);
-    }
+    // 🖱️ CURSOR INIT
+    let mut cursor = Cursor::new();
+    cursor.move_to(100, 100);
+
+    // debug output (visueel conceptueel)
+    draw_rect(
+        fb.addr,
+        window::Rect {
+            x: cursor.x,
+            y: cursor.y,
+            w: 2,
+            h: 2,
+        },
+        fb.width,
+        Color { r: 255, g: 0, b: 0 },
+    );
 
     Status::SUCCESS
 }
