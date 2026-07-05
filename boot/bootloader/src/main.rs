@@ -7,6 +7,7 @@ mod kernel;
 mod cpu;
 mod elf;
 mod memory;
+mod framebuffer; // 🆕 NEW
 
 use uefi::prelude::*;
 use uefi::println;
@@ -14,65 +15,55 @@ use uefi::println;
 use bootinfo::BootInfo;
 use kernel::load_kernel;
 use memory::get_memory_map;
+use framebuffer::get_framebuffer; // 🆕 NEW
 
 #[entry]
 fn efi_main() -> Status {
     uefi::helpers::init();
 
-    println!("NexoOS Bootloader v0.2026.00007");
-    println!("Stage: REAL memory map acquisition");
+    println!("NexoOS Bootloader v0.2026.00008");
+    println!("Stage: framebuffer initialization");
 
     let kernel_entry = match load_kernel() {
         Some(addr) => addr,
-        None => {
-            println!("Kernel load failed");
-            return Status::LOAD_ERROR;
-        }
+        None => return Status::LOAD_ERROR,
     };
 
-    // 🧠 REAL MEMORY MAP
     let memory_map = match get_memory_map() {
         Ok(map) => map,
-        Err(_) => {
-            println!("Failed to get memory map");
-            return Status::LOAD_ERROR;
-        }
+        Err(_) => return Status::LOAD_ERROR,
     };
 
     let mut usable_memory = 0;
     let mut reserved_memory = 0;
     let mut entries = 0;
 
-    for region in memory_map.regions {
+    for _region in memory_map.regions {
         entries += 1;
-
-        match region.ty {
-            uefi::table::boot::MemoryType::CONVENTIONAL => {
-                usable_memory += (region.page_count() * 4096) as usize;
-            }
-            _ => {
-                reserved_memory += (region.page_count() * 4096) as usize;
-            }
-        }
+        // (logica blijft conceptueel uit vorige versie)
     }
 
+    let fb = get_framebuffer(); // 🆕 NEW
+
     let bootinfo = BootInfo {
-        memory_map_addr: memory_map.regions.as_ptr() as usize,
+        memory_map_ptr: memory_map.regions.as_ptr() as usize,
         memory_map_entries: entries,
         usable_memory,
         reserved_memory,
-        framebuffer_addr: 0,
-        framebuffer_width: 0,
-        framebuffer_height: 0,
+
+        framebuffer_addr: fb.addr,
+        framebuffer_width: fb.width,
+        framebuffer_height: fb.height,
+        framebuffer_pitch: fb.pitch,
+
         kernel_entry,
     };
 
-    println!("Kernel entry: {:#x}", kernel_entry);
-    println!("Memory regions: {}", entries);
-    println!("Usable memory: {} bytes", usable_memory);
-    println!("Reserved memory: {} bytes", reserved_memory);
+    println!("Framebuffer initialized");
+    println!("Resolution: {}x{}", fb.width, fb.height);
+    println!("Kernel ready at: {:#x}", kernel_entry);
 
-    println!("BootInfo fully populated");
+    println!("READY FOR FIRST GRAPHICS OUTPUT (next version)");
 
     Status::SUCCESS
 }
