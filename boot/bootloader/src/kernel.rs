@@ -1,9 +1,13 @@
 #![allow(dead_code)]
 
-pub fn load_kernel() -> Option<usize> {
-    // v0.2026.00004: nog steeds stub
-    // later vervangen door ELF loader
+use crate::elf::{parse_elf, ElfBinary};
 
-    let fake_kernel_entry: usize = 0x100000;
-    Some(fake_kernel_entry)
+pub fn load_kernel() -> Option<usize> {
+    // v0.2026.00005: introduce ELF pipeline concept
+
+    let fake_kernel_image: [u8; 1] = [0]; // placeholder binary
+
+    let elf: ElfBinary = parse_elf(&fake_kernel_image)?;
+
+    Some(elf.header.entry)
 }
