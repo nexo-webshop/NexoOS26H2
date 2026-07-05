@@ -8,27 +8,27 @@ mod cpu;
 mod elf;
 mod memory;
 mod framebuffer;
-mod graphics; // 🆕 NEW
+mod graphics;
+mod font;       // 🆕
+mod ui;         // 🆕
+mod progress;   // 🆕
 
 use uefi::prelude::*;
-use uefi::println;
 
 use bootinfo::BootInfo;
 use kernel::load_kernel;
 use memory::get_memory_map;
 use framebuffer::get_framebuffer;
-use graphics::{draw_pixel, Color}; // 🆕 NEW
+use graphics::Color;
+use ui::draw_text;
+use progress::draw_progress_bar;
 
 #[entry]
 fn efi_main() -> Status {
     uefi::helpers::init();
 
-    println!("NexoOS Bootloader v0.2026.00009");
-    println!("Stage: first pixel rendering");
-
-    let kernel_entry = load_kernel().ok_or(Status::LOAD_ERROR)?;
-
-    let memory_map = get_memory_map().map_err(|_| Status::LOAD_ERROR)?;
+    let kernel_entry = load_kernel().ok()?;
+    let memory_map = get_memory_map().ok()?;
 
     let mut entries = 0;
     for _ in memory_map.regions {
@@ -37,7 +37,7 @@ fn efi_main() -> Status {
 
     let fb = get_framebuffer();
 
-    let bootinfo = BootInfo {
+    let _bootinfo = BootInfo {
         memory_map_ptr: memory_map.regions.as_ptr() as usize,
         memory_map_entries: entries,
         usable_memory: 0,
@@ -49,23 +49,31 @@ fn efi_main() -> Status {
         kernel_entry,
     };
 
-    println!("Drawing test pattern...");
+    let white = Color { r: 255, g: 255, b: 255 };
 
-    // 🎨 FIRST PIXELS EVER
-    let color = Color { r: 0, g: 255, b: 0 };
+    // 🧠 BOOT UI START
+    draw_text(
+        fb.addr,
+        20,
+        20,
+        fb.width,
+        "NexoOS Bootloader v0.2026.00010",
+        white,
+    );
 
-    for x in 0..200 {
-        draw_pixel(
-            fb.addr,
-            x,
-            100,
-            fb.width,
-            color,
-        );
+    draw_text(
+        fb.addr,
+        20,
+        40,
+        fb.width,
+        "Initializing system...",
+        white,
+    );
+
+    // 📊 progress bar simulation
+    for i in 0..100 {
+        draw_progress_bar(fb.addr, 20, 70, fb.width, i, 100);
     }
-
-    println!("Pixel line drawn");
-    println!("Framebuffer write successful");
 
     Status::SUCCESS
 }
