@@ -4,19 +4,21 @@
 mod analysis_hints;
 mod bootinfo;
 mod kernel;
+mod cpu;
 
 use uefi::prelude::*;
 use uefi::println;
 
 use bootinfo::BootInfo;
 use kernel::load_kernel;
+use cpu::CpuState;
 
 #[entry]
 fn efi_main() -> Status {
     uefi::helpers::init();
 
-    println!("NexoOS Bootloader v0.2026.00003");
-    println!("Stage: kernel preparation");
+    println!("NexoOS Bootloader v0.2026.00004");
+    println!("Stage: kernel handover preparation");
 
     let kernel_entry = match load_kernel() {
         Some(addr) => addr,
@@ -35,8 +37,13 @@ fn efi_main() -> Status {
         kernel_entry,
     };
 
-    println!("Kernel prepared at: {:#x}", kernel_entry);
-    println!("BootInfo created");
+    let cpu_state = CpuState::new(kernel_entry);
+
+    println!("Kernel entry: {:#x}", kernel_entry);
+    println!("Stack pointer: {:#x}", cpu_state.stack_pointer);
+    println!("CPU state prepared");
+
+    println!("READY FOR KERNEL JUMP (not executed yet)");
 
     Status::SUCCESS
 }
