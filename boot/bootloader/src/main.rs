@@ -20,12 +20,10 @@ use kernel::load_kernel;
 use memory::get_memory_map;
 use framebuffer::get_framebuffer;
 
-use graphics::primitives::Color;
-use graphics::framebuffer::draw_pixel;
-
-use input::keyboard::KeyboardState;
-use input::mouse::MouseState;
-use input::events::InputEvent;
+// Zorg dat deze paden exact overeenkomen met hoe je graphics/input mods zijn opgebouwd
+use graphics::Color; 
+use graphics::draw_pixel;
+use input::{KeyboardState, MouseState, InputEvent};
 
 #[entry]
 fn efi_main() -> Status {
@@ -34,8 +32,16 @@ fn efi_main() -> Status {
     let _ = core::boot_core();
     let _ = system::init_system();
 
-    let kernel_entry = load_kernel().ok()?;
-    let memory_map = get_memory_map().ok()?;
+    // FIX: Netjes matchen in plaats van de ? operator te misbruiken op een Option
+    let kernel_entry = match load_kernel() {
+        Some(entry) => entry,
+        None => return Status::ABORTED,
+    };
+
+    let memory_map = match get_memory_map() {
+        Ok(map) => map,
+        Err(status) => return status,
+    };
 
     let fb = get_framebuffer();
 
